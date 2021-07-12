@@ -1,6 +1,5 @@
 import os
 import sys
-import unittest
 
 import torch
 from torch.testing import FileCheck
@@ -93,10 +92,9 @@ class TestTyping(JitTestCase):
 
         graph = torch.jit.script(fn).graph
 
-        print(graph)
-
         # Check that we're making a `List[Tuple[str, Any]]`
-        FileCheck().check(r"(str, Any)[] = prim::ListConstruct").run(graph)
+        FileCheck().check("(str, Union[Tensor, Dict(str, Tensor)])"
+                          "[] = prim::ListConstruct()").run(graph)
 
     def test_list_type_refinement_defaults_to_Any_list_comprehension(self):
         def fn(x):
@@ -117,10 +115,9 @@ class TestTyping(JitTestCase):
 
         graph = torch.jit.script(fn).graph
 
-        print(graph)
-
         # Check that we're making a `List[Tuple[str, Any]]`
-        FileCheck().check(r"(str, Any)[] = prim::ListConstruct").run(graph)
+        FileCheck().check("(str, Union[Tensor, Dict(str, Tensor)])"
+                          "[] = prim::ListConstruct()").run(graph)
 
     def test_list_type_refinement_annotation_element_mismatch(self):
         def fn():
@@ -132,7 +129,6 @@ class TestTyping(JitTestCase):
                                     "types of the given list elements"):
             torch.jit.script(fn)
 
-    @unittest.skipIf(True, "Temporarily skipping while landing entire Union PR stack")
     def test_dict_type_refinement_defaults_to_Any_dict_creation(self):
         def fn(x):
             d = dict(foo=torch.tensor(2),
@@ -147,9 +143,9 @@ class TestTyping(JitTestCase):
 
         graph = torch.jit.script(fn).graph
 
-        FileCheck().check(r"Dict(str, Any) = prim::DictConstruct").run(graph)
+        FileCheck().check("Dict(str, Union[Tensor, Dict(str, Tensor)])"
+                          " = prim::DictConstruct").run(graph)
 
-    @unittest.skipIf(True, "Temporarily skipping while landing entire Union PR stack")
     def test_dict_type_refinement_defaults_to_Any_dict_comprehension(self):
         def fn(x):
             d = {"foo": torch.tensor(2),
@@ -164,9 +160,9 @@ class TestTyping(JitTestCase):
 
         graph = torch.jit.script(fn).graph
 
-        FileCheck().check("Dict(str, Any) = prim::DictConstruct").run(graph)
+        FileCheck().check("Dict(str, Union[Tensor, Dict(str, Tensor)])"
+                          " = prim::DictConstruct").run(graph)
 
-    @unittest.skipIf(True, "Temporarily skipping while landing entire Union PR stack")
     def test_dict_type_refinement_annotation_key_mismatch(self):
         def fn():
             l1 = [1, 2, "foo", 3]
@@ -179,7 +175,6 @@ class TestTyping(JitTestCase):
                                     " the type of an actual key type"):
             torch.jit.script(fn)
 
-    @unittest.skipIf(True, "Temporarily skipping while landing entire Union PR stack")
     def test_dict_type_refinement_annotation_value_mismatch(self):
         def fn():
             l1 = ["foo", "bar", "baz", "qux"]
